@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=1.0, maximum-scale=5.0"/>
+  <title>VozCheck - Detector de Voz IA vs Real</title>
+  <meta name="description" content="Detector avanzado de voces generadas por IA usando análisis de frecuencias y machine learning">
+  <meta name="keywords" content="detector voz IA, análisis frecuencias, MFCC, jitter, shimmer, voz sintética">
+  
+  <!-- Preconnect para optimización -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#00d4ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VozCheck">
+  
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header>
+    <nav>
+      <div class="nav-brand">
+        <h1>🔍 VozCheck</h1>
+        <span class="nav-subtitle">Detector de Voz IA</span>
+      </div>
+      <ul id="navMenu">
+        <li><a href="#auth" class="nav-link active">Acceso</a></li>
+      </ul>
+      <div class="options-menu" id="optionsMenu" style="display:none;">
+        <button class="options-btn" onclick="toggleOptionsMenu()" aria-label="Menú de opciones">⚙️</button>
+        <div class="options-dropdown" id="optionsDropdown">
+          <a href="#" onclick="showProfile()" role="button">👤 Perfil</a>
+          <a href="#" onclick="showSettings()" role="button">⚙️ Configuración</a>
+          <a href="#" onclick="logout()" role="button">🚪 Cerrar Sesión</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Sección de Análisis Individual -->
+    <section id="analisis" class="pantalla oculto">
+      <div class="container">
+        <div class="section-header">
+          <h2>🎤 Análisis Individual de Voz</h2>
+          <p class="section-description">Sube un archivo de audio o graba tu voz para detectar si es generada por IA usando análisis avanzado de frecuencias</p>
+        </div>
+        
+        <div class="analysis-card">
+          <div class="upload-section">
+            <div class="upload-option">
+              <input type="file" id="archivoAudio" accept=".mp3,.wav,.webm,.ogg" class="file-input" hidden>
+              <label for="archivoAudio" class="upload-btn" role="button" tabindex="0">
+                <span class="upload-icon">📁</span>
+                <span class="upload-text">Seleccionar Archivo</span>
+                <span class="upload-hint">MP3, WAV, WebM u OGG, máx 50MB</span>
+              </label>
+              <div class="file-status" id="archivoAudioStatus" role="status" aria-live="polite"></div>
+            </div>
+            
+            <div class="divider">
+              <span>o</span>
+            </div>
+            
+            <div class="record-option">
+              <button id="recordBtn" onclick="toggleRecording()" class="record-btn" aria-label="Grabar voz">
+                <span class="record-icon">🎙️</span>
+                <span class="record-text">Grabar Voz</span>
+              </button>
+              <div class="recording-timer" id="recordingTimer" style="display:none;" role="status" aria-live="polite">
+                <span class="timer-icon">🔴</span>
+                <span class="timer-text" id="timerText">00:00</span>
+              </div>
+            </div>
+          </div>
+          
+          <button id="analyzeBtn" onclick="iniciarAnalisis()" class="analyze-btn" disabled aria-label="Analizar audio con IA">
+            <span class="btn-icon">🔍</span>
+            <span class="btn-text">Analizar Audio</span>
+          </button>
+        </div>
+
+        <!-- Resultados -->
+        <div id="resultadoAnalisis" class="result-section" style="display:none;" role="region" aria-label="Resultados del análisis">
+          <div class="result-header">
+            <h3>📊 Resultado del Análisis</h3>
+          </div>
+          <div id="resultado" class="result-content" role="status" aria-live="polite"></div>
+          
+          <!-- Visualizaciones -->
+          <div class="visualizations">
+            <div class="viz-item">
+              <h4>Forma de Onda</h4>
+              <canvas id="waveformCanvas" width="600" height="150" aria-label="Gráfica de forma de onda del audio"></canvas>
+            </div>
+            <div class="viz-item">
+              <h4>Espectro de Frecuencias</h4>
+              <canvas id="spectrumCanvas" width="600" height="150" aria-label="Gráfica del espectro de frecuencias"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sección de Comparación -->
+    <section id="comparacion" class="pantalla oculto">
+      <div class="container">
+        <div class="section-header">
+          <h2>🆚 Comparación de Voces</h2>
+          <p class="section-description">Compara dos archivos de audio para identificar cuál es real y cuál es IA usando análisis avanzado</p>
+        </div>
+
+        <div class="comparison-card">
+          <div class="comparison-uploads">
+            <div class="upload-slot">
+              <input type="file" id="archivo1" accept=".mp3,.wav,.webm,.ogg" class="file-input" hidden>
+              <label for="archivo1" class="upload-slot-btn" role="button" tabindex="0">
+                <span class="slot-icon">🎤</span>
+                <span class="slot-title">Archivo 1</span>
+                <span class="slot-hint">Arrastra o selecciona</span>
+              </label>
+              <div class="file-status" id="archivo1Status" role="status" aria-live="polite"></div>
+            </div>
+
+            <div class="vs-divider">
+              <span class="vs-text">VS</span>
+            </div>
+
+            <div class="upload-slot">
+              <input type="file" id="archivo2" accept=".mp3,.wav,.webm,.ogg" class="file-input" hidden>
+              <label for="archivo2" class="upload-slot-btn" role="button" tabindex="0">
+                <span class="slot-icon">🎤</span>
+                <span class="slot-title">Archivo 2</span>
+                <span class="slot-hint">Arrastra o selecciona</span>
+              </label>
+              <div class="file-status" id="archivo2Status" role="status" aria-live="polite"></div>
+            </div>
+          </div>
+
+          <button id="compareBtn" onclick="iniciarComparacion()" class="compare-btn" disabled aria-label="Comparar voces con análisis avanzado">
+            <span class="btn-icon">⚡</span>
+            <span class="btn-text">Comparar Voces</span>
+          </button>
+        </div>
+
+        <!-- Resultados de Comparación -->
+        <div id="resultadoComparacion" class="comparison-results" style="display:none;" role="region" aria-label="Resultados de la comparación">
+          <div class="detection-results">
+            <div class="detection-card" id="detection1">
+              <div class="detection-header">
+                <span class="file-name" id="fileName1">Archivo 1</span>
+              </div>
+              <div class="detection-result" id="result1" role="status" aria-live="polite">Analizando...</div>
+              <div class="confidence-meter" role="progressbar" aria-label="Medidor de confianza archivo 1">
+                <div class="confidence-bar">
+                  <div class="confidence-fill" id="confidence1"></div>
+                </div>
+                <span class="confidence-text" id="confidenceText1">0%</span>
+              </div>
+            </div>
+
+            <div class="detection-card" id="detection2">
+              <div class="detection-header">
+                <span class="file-name" id="fileName2">Archivo 2</span>
+              </div>
+              <div class="detection-result" id="result2" role="status" aria-live="polite">Analizando...</div>
+              <div class="confidence-meter" role="progressbar" aria-label="Medidor de confianza archivo 2">
+                <div class="confidence-bar">
+                  <div class="confidence-fill" id="confidence2"></div>
+                </div>
+                <span class="confidence-text" id="confidenceText2">0%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="final-verdict" id="finalVerdict">
+            <h3>🎯 Veredicto Final</h3>
+            <div id="finalResult" class="verdict-content" role="status" aria-live="polite">Procesando...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sección de Entrenamiento -->
+    <section id="entrenamiento" class="pantalla oculto">
+      <div class="container">
+        <div class="section-header">
+          <h2>🧠 Entrenamiento del Modelo</h2>
+          <p class="section-description">Ayuda a mejorar la precisión grabando muestras de voz real para el análisis de frecuencias</p>
+        </div>
+
+        <div class="training-card">
+          <div class="pangram-selector">
+            <h3>📝 Selecciona un Texto para Leer</h3>
+            <div class="pangram-tabs" role="tablist">
+              <button class="tab-btn active" onclick="showPangramCategory('cortos')" role="tab" aria-selected="true" aria-controls="cortos">Cortos</button>
+              <button class="tab-btn" onclick="showPangramCategory('medianos')" role="tab" aria-selected="false" aria-controls="medianos">Medianos</button>
+              <button class="tab-btn" onclick="showPangramCategory('largos')" role="tab" aria-selected="false" aria-controls="largos">Largos</button>
+            </div>
+            
+            <div class="pangram-list" id="pangramList">
+              <!-- Pangramas Cortos -->
+              <div class="pangram-category active" id="cortos" role="tabpanel" aria-labelledby="tab-cortos">
+                <div class="pangram-item" data-pangram="Jovencillo emponzoñado con whisky: ¡qué figurota exhibe!" role="button" tabindex="0">
+                  "Jovencillo emponzoñado con whisky: ¡qué figurota exhibe!"
+                </div>
+                <div class="pangram-item" data-pangram="Quizás Jeff, mi viejo compañero, pueda hablar con más fluidez." role="button" tabindex="0">
+                  "Quizás Jeff, mi viejo compañero, pueda hablar con más fluidez."
+                </div>
+                <div class="pangram-item" data-pangram="Whisky bueno: ¡excitad mi frágil pequeña vejez!" role="button" tabindex="0">
+                  "Whisky bueno: ¡excitad mi frágil pequeña vejez!"
+                </div>
+                <div class="pangram-item" data-pangram="Juzgad si mi querido kiwi verde, flexible, es extraño." role="button" tabindex="0">
+                  "Juzgad si mi querido kiwi verde, flexible, es extraño."
+                </div>
+                <div class="pangram-item" data-pangram="Quizá Jeff compró whisky barato y exquisito en Guadalajara." role="button" tabindex="0">
+                  "Quizá Jeff compró whisky barato y exquisito en Guadalajara."
+                </div>
+              </div>
+
+              <!-- Pangramas Medianos -->
+              <div class="pangram-category" id="medianos" role="tabpanel" aria-labelledby="tab-medianos">
+                <div class="pangram-item" data-pangram="El pingüino Wenceslao hizo kilómetros bajo exhaustiva lluvia y frío, añoraba a su querido joven." role="button" tabindex="0">
+                  "El pingüino Wenceslao hizo kilómetros bajo exhaustiva lluvia y frío, añoraba a su querido joven."
+                </div>
+                <div class="pangram-item" data-pangram="Benjamin pidió una bebida de kiwi y fresa; Noé, sin vergüenza, la más exquisita champaña del menú." role="button" tabindex="0">
+                  "Benjamin pidió una bebida de kiwi y fresa; Noé, sin vergüenza, la más exquisita champaña del menú."
+                </div>
+                <div class="pangram-item" data-pangram="La cigüeña tocaba cada vez mejor el saxofón y el búho pedía kiwi y queso para desayunar." role="button" tabindex="0">
+                  "La cigüeña tocaba cada vez mejor el saxofón y el búho pedía kiwi y queso para desayunar."
+                </div>
+                <div class="pangram-item" data-pangram="Fabio me exige, sin tapujos, que añada cerveza al whisky que preparo para la cena de Joaquín." role="button" tabindex="0">
+                  "Fabio me exige, sin tapujos, que añada cerveza al whisky que preparo para la cena de Joaquín."
+                </div>
+                <div class="pangram-item" data-pangram="Ese libro explica en su epígrafe las hazañas y aventuras de Don Quijote de la Mancha en Kuwait." role="button" tabindex="0">
+                  "Ese libro explica en su epígrafe las hazañas y aventuras de Don Quijote de la Mancha en Kuwait."
+                </div>
+              </div>
+
+              <!-- Pangramas Largos -->
+              <div class="pangram-category" id="largos" role="tabpanel" aria-labelledby="tab-largos">
+                <div class="pangram-item" data-pangram="Tengo un libro de papiroflexia sobre las hazañas y aventuras de Don Quijote de la Mancha en Kuwait, que explica con jeroglíficos antiguos las técnicas más avanzadas." role="button" tabindex="0">
+                  "Tengo un libro de papiroflexia sobre las hazañas y aventuras de Don Quijote de la Mancha en Kuwait, que explica con jeroglíficos antiguos las técnicas más avanzadas."
+                </div>
+                <div class="pangram-item" data-pangram="El joven Joaquín compró en Guadalajara un exquisito whisky para beber con su novia en la fiesta de cumpleaños, mientras escuchaban jazz y blues hasta el amanecer." role="button" tabindex="0">
+                  "El joven Joaquín compró en Guadalajara un exquisito whisky para beber con su novia en la fiesta de cumpleaños, mientras escuchaban jazz y blues hasta el amanecer."
+                </div>
+                <div class="pangram-item" data-pangram="La profesora de química explicó a sus estudiantes que el experimento requería mezclar zinc, magnesio y fósforo con mucho cuidado para evitar explosiones peligrosas en el laboratorio." role="button" tabindex="0">
+                  "La profesora de química explicó a sus estudiantes que el experimento requería mezclar zinc, magnesio y fósforo con mucho cuidado para evitar explosiones peligrosas en el laboratorio."
+                </div>
+                <div class="pangram-item" data-pangram="Mi abuelo Jacinto cultivaba en su jardín hermosas flores como jazmines, begonias y petunias, mientras que en la huerta tenía tomates, zanahorias, berenjenas y calabazas para toda la familia." role="button" tabindex="0">
+                  "Mi abuelo Jacinto cultivaba en su jardín hermosas flores como jazmines, begonias y petunias, mientras que en la huerta tenía tomates, zanahorias, berenjenas y calabazas para toda la familia."
+                </div>
+                <div class="pangram-item" data-pangram="Durante el viaje por Europa, visitamos museos extraordinarios en París, galerías de arte moderno en Berlín, castillos medievales en Praga y disfrutamos de la exquisita gastronomía italiana en Roma y Florencia." role="button" tabindex="0">
+                  "Durante el viaje por Europa, visitamos museos extraordinarios en París, galerías de arte moderno en Berlín, castillos medievales en Praga y disfrutamos de la exquisita gastronomía italiana en Roma y Florencia."
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="selected-text" id="selectedText" style="display:none;">
+            <h4>📖 Texto Seleccionado:</h4>
+            <p id="selectedPangram"></p>
+          </div>
+
+          <div class="training-controls">
+            <button id="trainBtn" onclick="iniciarEntrenamiento()" class="train-btn" disabled aria-label="Iniciar grabación de entrenamiento">
+              <span class="btn-icon">🎙️</span>
+              <span class="btn-text">Iniciar Grabación</span>
+            </button>
+            
+            <div class="training-timer" id="trainingTimer" style="display:none;" role="status" aria-live="polite">
+              <div class="timer-circle">
+                <span class="timer-value" id="trainingTime">00:00</span>
+              </div>
+              <button onclick="detenerEntrenamiento()" class="stop-btn" aria-label="Detener grabación">
+                <span class="btn-icon">⏹️</span>
+                Detener
+              </button>
+            </div>
+          </div>
+
+          <div id="trainingStatus" class="training-status" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sección de Acceso -->
+    <section id="auth" class="pantalla">
+      <div class="auth-container">
+        <div class="auth-card">
+          <div class="auth-header">
+            <h1 class="auth-title">🔍 VozCheck</h1>
+            <p class="auth-subtitle">Detector de Voz IA vs Real</p>
+          </div>
+          
+          <form id="authForm" class="auth-form" novalidate>
+            <div class="form-group">
+              <label for="authEmail">Correo electrónico</label>
+              <input type="email" id="authEmail" placeholder="Correo electrónico" required autocomplete="email">
+            </div>
+            <div class="form-group">
+              <label for="authPassword">Contraseña</label>
+              <input type="password" id="authPassword" placeholder="Contraseña" required autocomplete="current-password">
+            </div>
+            
+            <div class="auth-buttons">
+              <button type="button" onclick="loginEmail()" class="btn-primary">Iniciar Sesión</button>
+              <button type="button" onclick="registerEmail()" class="btn-secondary">Registrarse</button>
+            </div>
+            
+            <div class="auth-divider">
+              <span>o continúa con</span>
+            </div>
+            
+            <div class="social-buttons">
+              <button type="button" onclick="loginGoogle()" class="social-btn google" aria-label="Iniciar sesión con Google">
+                <span class="social-icon">🔵</span>
+                Google
+              </button>
+              <button type="button" onclick="loginFacebook()" class="social-btn facebook" aria-label="Iniciar sesión con Facebook">
+                <span class="social-icon">🔵</span>
+                Facebook
+              </button>
+            </div>
+          </form>
+          
+          <div id="authStatus" class="auth-status" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sección de Perfil -->
+    <section id="perfil" class="pantalla oculto">
+      <div class="auth-container">
+        <div class="profile-card">
+          <div class="profile-header">
+            <h2>👤 Perfil de Usuario</h2>
+            <p>Completa tu información personal</p>
+          </div>
+          
+          <form id="perfilForm" class="profile-form" novalidate>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="nombreCompleto">Nombre Completo *</label>
+                <input type="text" id="nombreCompleto" required autocomplete="name">
+              </div>
+              <div class="form-group">
+                <label for="correoUsuario">Correo Electrónico *</label>
+                <input type="email" id="correoUsuario" readonly autocomplete="email">
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="telefono">Teléfono</label>
+                <div class="phone-input">
+                  <input type="tel" id="telefono" placeholder="1234567890" maxlength="10" autocomplete="tel">
+                  <span class="phone-counter" id="phoneCounter">0/10</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="tipoUsuario">Tipo de Usuario *</label>
+                <select id="tipoUsuario" required>
+                  <option value="">Selecciona una opción</option>
+                  <option value="estudiante">Estudiante</option>
+                  <option value="maestro">Maestro</option>
+                  <option value="investigador">Investigador</option>
+                  <option value="profesionista">Profesionista</option>
+                  <option value="particular">Particular</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button type="button" onclick="guardarPerfil()" id="btnGuardarPerfil" class="btn-primary">
+                Completar Perfil
+              </button>
+              <button type="button" onclick="editarPerfil()" id="btnEditarPerfil" class="btn-secondary" style="display:none;">
+                Editar Perfil
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sección de Configuración -->
+    <section id="configuracion" class="pantalla oculto">
+      <div class="container">
+        <div class="section-header">
+          <h2>⚙️ Configuración</h2>
+          <p class="section-description">Personaliza la apariencia y configuración de VozCheck</p>
+        </div>
+
+        <div class="config-grid">
+          <div class="config-card">
+            <h3>🎨 Apariencia</h3>
+            <div class="config-item">
+              <label for="themeSelector">Tema:</label>
+              <select id="themeSelector" onchange="changeTheme()">
+                <option value="dark">🌙 Oscuro</option>
+                <option value="light">☀️ Claro</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="config-card">
+            <h3>🌍 Idioma</h3>
+            <div class="config-item">
+              <label for="languageSelector">Idioma:</label>
+              <select id="languageSelector" onchange="changeLanguage()">
+                <option value="es">🇪🇸 Español</option>
+                <option value="en">🇺🇸 English</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-actions">
+          <button onclick="saveConfiguration()" class="btn-primary">💾 Guardar</button>
+          <button onclick="resetConfiguration()" class="btn-secondary">🔄 Restablecer</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay" style="display:none;" role="status" aria-label="Cargando">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <p id="loadingText">Procesando...</p>
+    </div>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="toastContainer" class="toast-container" role="region" aria-label="Notificaciones" aria-live="polite"></div>
+
+  <footer>
+    <div class="footer-content">
+      <p>&copy; 2025 VozCheck. Desarrollado por Oz - Análisis avanzado de frecuencias</p>
+    </div>
+  </footer>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
