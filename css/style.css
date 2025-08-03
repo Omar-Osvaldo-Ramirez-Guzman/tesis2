@@ -339,11 +339,13 @@ main {
   font-size: clamp(1rem, 3vw, 1.1rem);
 }
 
-/* Botones principales responsive */
+/* Botones principales responsive - CENTRADOS */
 .analyze-btn,
 .compare-btn,
 .train-btn {
   width: 100%;
+  max-width: 400px; /* Limitar ancho máximo */
+  margin: 0 auto; /* Centrar horizontalmente */
   padding: clamp(0.8rem, 3vw, 1rem) clamp(1.5rem, 4vw, 2rem);
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   border: none;
@@ -373,6 +375,14 @@ main {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Contenedor de botones centrado */
+.button-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 1.5rem;
 }
 
 /* Estados de archivo responsive */
@@ -496,7 +506,7 @@ main {
   border: 1px solid var(--primary-color);
 }
 
-/* Visualizaciones responsive */
+/* Visualizaciones responsive con zoom */
 .visualizations {
   display: grid;
   grid-template-columns: 1fr;
@@ -506,6 +516,7 @@ main {
 
 .viz-item {
   text-align: center;
+  position: relative; /* Para posicionar el botón de zoom */
 }
 
 .viz-item h4 {
@@ -522,6 +533,100 @@ main {
   background: var(--bg-primary);
   border-radius: var(--radius);
   border: 1px solid var(--border-color);
+  cursor: pointer; /* Indicar que es clickeable */
+}
+
+/* Estilos para el botón de zoom */
+.zoom-btn {
+  position: absolute;
+  top: 35px; /* Ajustar según la altura del h4 */
+  right: 10px;
+  background: rgba(0, 212, 255, 0.8);
+  border: none;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  z-index: 10;
+  transition: var(--transition);
+}
+
+.zoom-btn:hover {
+  background: rgba(0, 212, 255, 1);
+  transform: scale(1.05);
+}
+
+/* Estilos para el modal de zoom */
+.zoom-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.zoom-modal .container {
+  background: #1a1f2e;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 95%;
+  max-height: 95%;
+  position: relative;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.zoom-modal canvas {
+  border: 1px solid #00d4ff;
+  border-radius: 8px;
+  background: #0a0e1a;
+  max-width: 100%;
+  max-height: 70vh;
+}
+
+.zoom-modal h3 {
+  color: #00d4ff;
+  margin: 0 0 15px 0;
+  text-align: center;
+  font-size: clamp(1.1rem, 3vw, 1.3rem);
+}
+
+.zoom-modal .close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #ff4444;
+  border: none;
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: var(--transition);
+}
+
+.zoom-modal .close-btn:hover {
+  background: #cc3333;
+  transform: scale(1.1);
 }
 
 /* Resultados de detección responsive */
@@ -782,7 +887,7 @@ main {
   transform: translateY(-1px);
 }
 
-/* Sección de Autenticación responsive */
+/* Sección de Autenticación responsive MEJORADA */
 .auth-container {
   display: flex;
   align-items: center;
@@ -954,6 +1059,48 @@ main {
   text-align: center;
   font-weight: 500;
   font-size: clamp(0.9rem, 2.5vw, 1rem);
+}
+
+/* Enlace de recuperación de contraseña */
+.forgot-password-link {
+  display: block;
+  text-align: center;
+  margin-top: 1rem;
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+  transition: var(--transition);
+}
+
+.forgot-password-link:hover {
+  color: var(--secondary-color);
+  text-decoration: underline;
+}
+
+/* Estilos para modal de recuperación de contraseña */
+.forgot-password-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.forgot-password-modal .container {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 100%;
+  border: 1px solid var(--border-color);
+  animation: slideIn 0.3s ease;
 }
 
 /* Perfil responsive */
