@@ -78,10 +78,12 @@
             </div>
           </div>
           
-          <button id="analyzeBtn" onclick="iniciarAnalisis()" class="analyze-btn" disabled aria-label="Analizar audio con IA">
-            <span class="btn-icon">🔍</span>
-            <span class="btn-text">Analizar Audio</span>
-          </button>
+          <div class="button-container">
+            <button id="analyzeBtn" onclick="iniciarAnalisis()" class="analyze-btn" disabled aria-label="Analizar audio con IA">
+              <span class="btn-icon">🔍</span>
+              <span class="btn-text">Analizar Audio</span>
+            </button>
+          </div>
         </div>
 
         <!-- Resultados -->
@@ -141,10 +143,12 @@
             </div>
           </div>
 
-          <button id="compareBtn" onclick="iniciarComparacion()" class="compare-btn" disabled aria-label="Comparar voces con análisis avanzado">
-            <span class="btn-icon">⚡</span>
-            <span class="btn-text">Comparar Voces</span>
-          </button>
+          <div class="button-container">
+            <button id="compareBtn" onclick="iniciarComparacion()" class="compare-btn" disabled aria-label="Comparar voces con análisis avanzado">
+              <span class="btn-icon">⚡</span>
+              <span class="btn-text">Comparar Voces</span>
+            </button>
+          </div>
         </div>
 
         <!-- Resultados de Comparación -->
@@ -268,10 +272,12 @@
           </div>
 
           <div class="training-controls">
-            <button id="trainBtn" onclick="iniciarEntrenamiento()" class="train-btn" disabled aria-label="Iniciar grabación de entrenamiento">
-              <span class="btn-icon">🎙️</span>
-              <span class="btn-text">Iniciar Grabación</span>
-            </button>
+            <div class="button-container">
+              <button id="trainBtn" onclick="iniciarEntrenamiento()" class="train-btn" disabled aria-label="Iniciar grabación de entrenamiento">
+                <span class="btn-icon">🎙️</span>
+                <span class="btn-text">Iniciar Grabación</span>
+              </button>
+            </div>
             
             <div class="training-timer" id="trainingTimer" style="display:none;" role="status" aria-live="polite">
               <div class="timer-circle">
@@ -313,6 +319,8 @@
               <button type="button" onclick="registerEmail()" class="btn-secondary">Registrarse</button>
             </div>
             
+            <a href="#" onclick="showForgotPassword()" class="forgot-password-link">¿Olvidaste tu contraseña?</a>
+            
             <div class="auth-divider">
               <span>o continúa con</span>
             </div>
@@ -322,14 +330,55 @@
                 <span class="social-icon">🔵</span>
                 Google
               </button>
-              <button type="button" onclick="loginFacebook()" class="social-btn facebook" aria-label="Iniciar sesión con Facebook">
-                <span class="social-icon">🔵</span>
-                Facebook
-              </button>
             </div>
           </form>
           
           <div id="authStatus" class="auth-status" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sección de Registro -->
+    <section id="registro" class="pantalla oculto">
+      <div class="auth-container">
+        <div class="auth-card">
+          <div class="auth-header">
+            <h1 class="auth-title">📝 Registro</h1>
+            <p class="auth-subtitle">Crea tu cuenta en VozCheck</p>
+          </div>
+          
+          <form id="regForm" class="auth-form" novalidate>
+            <div class="form-group">
+              <label for="regEmail">Correo electrónico</label>
+              <input type="email" id="regEmail" placeholder="Correo electrónico" required autocomplete="email">
+            </div>
+            <div class="form-group">
+              <label for="regPassword">Contraseña</label>
+              <input type="password" id="regPassword" placeholder="Contraseña (mín. 6 caracteres)" required autocomplete="new-password">
+            </div>
+            <div class="form-group">
+              <label for="regConfirmPassword">Confirmar Contraseña</label>
+              <input type="password" id="regConfirmPassword" placeholder="Confirmar contraseña" required autocomplete="new-password">
+            </div>
+            
+            <div class="auth-buttons">
+              <button type="button" onclick="processRegistration()" class="btn-primary">Crear Cuenta</button>
+              <button type="button" onclick="backToLogin()" class="btn-secondary">Volver al Login</button>
+            </div>
+            
+            <div class="auth-divider">
+              <span>o regístrate con</span>
+            </div>
+            
+            <div class="social-buttons">
+              <button type="button" onclick="loginGoogle()" class="social-btn google" aria-label="Registrarse con Google">
+                <span class="social-icon">🔵</span>
+                Google
+              </button>
+            </div>
+          </form>
+          
+          <div id="regStatus" class="auth-status" role="status" aria-live="polite"></div>
         </div>
       </div>
     </section>
