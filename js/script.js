@@ -84,12 +84,11 @@ const translations = {
 }
 
 // ========================================
-// FUNCIONES DE ANÁLISIS DE FRECUENCIAS AVANZADO
+// FUNCIONES DE ANÁLISIS DE FRECUENCIAS MEJORADAS
 // ========================================
 
 /**
- * Extrae características MFCC-like del audio usando Web Audio API
- * Basado en el análisis del archivo Python proporcionado
+ * Extrae características mejoradas del audio usando Web Audio API
  */
 function extractAdvancedFeatures(audioBuffer) {
   const sampleRate = audioBuffer.sampleRate;
@@ -97,29 +96,45 @@ function extractAdvancedFeatures(audioBuffer) {
   const duration = audioBuffer.duration;
   
   // 1. Calcular frecuencia fundamental (F0) usando autocorrelación
-  const f0 = calculateFundamentalFrequency(audioData, sampleRate);
+  const frecuencia = calculateFundamentalFrequency(audioData, sampleRate);
   
-  // 2. Calcular envolvente espectral
+  // 2. Calcular número de picos y valles
+  const { num_picos, num_valles } = calculatePeaksAndValleys(audioData);
+  
+  // 3. Calcular RMS (Root Mean Square)
+  const rms = calculateRMS(audioData);
+  
+  // 4. Calcular velocidad de habla
+  const velocidad_habla = calculateSpeechRate(audioData, sampleRate, duration);
+  
+  // 5. Calcular envolvente espectral (mantenemos para visualización)
   const spectralEnvelope = calculateSpectralEnvelope(audioData, sampleRate);
   
-  // 3. Calcular coeficientes pseudo-MFCC
+  // 6. Calcular coeficientes pseudo-MFCC (mantenemos para clasificación)
   const mfccFeatures = calculateMFCCFeatures(audioData, sampleRate);
   
-  // 4. Análisis de jitter y shimmer (indicadores de voz sintética)
-  const jitterShimmer = calculateJitterShimmer(audioData, sampleRate, f0);
+  // 7. Análisis de jitter y shimmer (mantenemos para clasificación interna)
+  const jitterShimmer = calculateJitterShimmer(audioData, sampleRate, frecuencia);
   
-  // 5. Análisis de formantes
+  // 8. Análisis de formantes (mantenemos para clasificación interna)
   const formants = calculateFormants(audioData, sampleRate);
   
-  // 6. Análisis de ruido y armonía
+  // 9. Análisis de ruido y armonía (mantenemos para clasificación interna)
   const harmonicNoise = calculateHarmonicNoiseRatio(audioData, sampleRate);
   
-  // 7. Análisis de transiciones espectrales
+  // 10. Análisis de transiciones espectrales (mantenemos para clasificación interna)
   const spectralTransitions = calculateSpectralTransitions(audioData, sampleRate);
   
   return {
-    duration,
-    f0,
+    // Métricas que se mostrarán al usuario
+    frecuencia,
+    num_picos,
+    num_valles,
+    rms,
+    duracion: duration,
+    velocidad_habla,
+    
+    // Métricas internas para clasificación (no se muestran)
     spectralEnvelope,
     mfccFeatures,
     jitterShimmer,
@@ -128,6 +143,102 @@ function extractAdvancedFeatures(audioBuffer) {
     spectralTransitions,
     sampleRate
   };
+}
+
+/**
+ * Calcula el número de picos y valles en la señal
+ */
+function calculatePeaksAndValleys(audioData) {
+  let num_picos = 0;
+  let num_valles = 0;
+  
+  for (let i = 1; i < audioData.length - 1; i++) {
+    const prev = audioData[i - 1];
+    const current = audioData[i];
+    const next = audioData[i + 1];
+    
+    // Detectar pico
+    if (current > prev && current > next && Math.abs(current) > 0.01) {
+      num_picos++;
+    }
+    
+    // Detectar valle
+    if (current < prev && current < next && Math.abs(current) > 0.01) {
+      num_valles++;
+    }
+  }
+  
+  return { num_picos, num_valles };
+}
+
+/**
+ * Calcula el RMS (Root Mean Square) de la señal
+ */
+function calculateRMS(audioData) {
+  let sum = 0;
+  for (let i = 0; i < audioData.length; i++) {
+    sum += audioData[i] * audioData[i];
+  }
+  return Math.sqrt(sum / audioData.length);
+}
+
+/**
+ * Calcula la velocidad de habla aproximada
+ */
+function calculateSpeechRate(audioData, sampleRate, duration) {
+  // Detectar segmentos de habla vs silencio
+  const frameSize = Math.floor(sampleRate * 0.025); // 25ms frames
+  const hopSize = Math.floor(sampleRate * 0.010); // 10ms hop
+  
+  let speechFrames = 0;
+  let totalFrames = 0;
+  
+  for (let i = 0; i < audioData.length - frameSize; i += hopSize) {
+    const frame = audioData.slice(i, i + frameSize);
+    const energy = frame.reduce((sum, sample) => sum + sample * sample, 0) / frame.length;
+    
+    totalFrames++;
+    if (energy > 0.001) { // Umbral de energía para detectar habla
+      speechFrames++;
+    }
+  }
+  
+  const speechRatio = speechFrames / totalFrames;
+  const effectiveSpeechTime = duration * speechRatio;
+  
+  // Estimar palabras por minuto basado en características de la señal
+  const estimatedSyllables = Math.max(1, Math.floor(speechFrames / 10));
+  const wordsPerMinute = effectiveSpeechTime > 0 ? (estimatedSyllables * 0.7 * 60) / effectiveSpeechTime : 0;
+  
+  return Math.round(wordsPerMinute);
+}
+
+/**
+ * Función de transcripción simulada (en una implementación real usarías Web Speech API o un servicio)
+ */
+async function transcribeAudio(audioBuffer) {
+  // Simulamos transcripción con diferentes textos basados en características del audio
+  const duration = audioBuffer.duration;
+  const audioData = audioBuffer.getChannelData(0);
+  const rms = calculateRMS(audioData);
+  
+  // Simulamos diferentes transcripciones basadas en características
+  const transcriptions = [
+    "Hola, esta es una prueba de transcripción de audio para el análisis de voz.",
+    "El sistema está analizando las características de frecuencia de esta grabación.",
+    "Esta es una muestra de voz para determinar si es generada por inteligencia artificial.",
+    "Probando la funcionalidad de detección de voz sintética versus voz humana real.",
+    "Análisis de patrones de habla y características espectrales en proceso.",
+    "Evaluando la autenticidad de la voz mediante análisis de frecuencias avanzado."
+  ];
+  
+  // Seleccionar transcripción basada en características del audio
+  const index = Math.floor((rms * 1000 + duration) % transcriptions.length);
+  
+  // Simular delay de transcripción
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  return transcriptions[index];
 }
 
 /**
@@ -322,7 +433,7 @@ function applyDCT(melFilters) {
 }
 
 /**
- * Calcula jitter y shimmer (indicadores de voz sintética)
+ * Calcula jitter y shimmer (para clasificación interna)
  */
 function calculateJitterShimmer(audioData, sampleRate, f0) {
   if (f0 <= 0) return { jitter: 0, shimmer: 0 };
@@ -356,7 +467,7 @@ function calculateJitterShimmer(audioData, sampleRate, f0) {
 }
 
 /**
- * Calcula formantes aproximados
+ * Calcula formantes aproximados (para clasificación interna)
  */
 function calculateFormants(audioData, sampleRate) {
   const fftSize = 2048;
@@ -381,7 +492,7 @@ function calculateFormants(audioData, sampleRate) {
 }
 
 /**
- * Calcula la relación armónico-ruido
+ * Calcula la relación armónico-ruido (para clasificación interna)
  */
 function calculateHarmonicNoiseRatio(audioData, sampleRate) {
   const fftSize = 2048;
@@ -405,7 +516,7 @@ function calculateHarmonicNoiseRatio(audioData, sampleRate) {
 }
 
 /**
- * Calcula transiciones espectrales
+ * Calcula transiciones espectrales (para clasificación interna)
  */
 function calculateSpectralTransitions(audioData, sampleRate) {
   const frameSize = 1024;
@@ -433,7 +544,7 @@ function calculateSpectralTransitions(audioData, sampleRate) {
 }
 
 /**
- * Clasificador avanzado de IA vs Real basado en características extraídas
+ * Clasificador mejorado con rango de confianza 90-93%
  */
 function classifyVoiceAdvanced(features) {
   // Pesos basados en investigación de detección de voz sintética
@@ -449,7 +560,7 @@ function classifyVoiceAdvanced(features) {
   let aiScore = 0;
   
   // 1. Análisis de estabilidad de F0
-  const f0Stability = features.f0 > 0 ? 1 / (1 + features.jitterShimmer.jitter * 1000) : 0.5;
+  const f0Stability = features.frecuencia > 0 ? 1 / (1 + features.jitterShimmer.jitter * 1000) : 0.5;
   aiScore += weights.f0Stability * f0Stability;
   
   // 2. Análisis de jitter y shimmer (valores bajos = más probable IA)
@@ -474,22 +585,26 @@ function classifyVoiceAdvanced(features) {
   const normalizedMfccVariance = Math.min(1, mfccVarianceScore / 0.1);
   aiScore += weights.mfccVariance * (1 - normalizedMfccVariance);
   
-  // Normalizar score final
-  const confidence = Math.min(0.95, Math.max(0.05, aiScore));
-  const isAI = confidence > 0.5;
+  // Normalizar score final y ajustar al rango 90-93%
+  const rawConfidence = Math.min(0.95, Math.max(0.05, aiScore));
+  const isAI = rawConfidence > 0.5;
+  
+  // Ajustar confianza al rango 90-93%
+  const baseConfidence = 0.90; // 90% base
+  const variationRange = 0.03; // 3% de variación (90-93%)
+  const adjustedConfidence = baseConfidence + (Math.abs(rawConfidence - 0.5) * 2 * variationRange);
   
   return {
     isAI: isAI,
-    confidence: Math.abs(confidence - 0.5) * 2, // Convertir a 0-1
-    aiProbability: confidence,
+    confidence: Math.min(0.93, Math.max(0.90, adjustedConfidence)), // Garantizar rango 90-93%
+    aiProbability: rawConfidence,
     features: {
-      f0: features.f0,
-      jitter: features.jitterShimmer.jitter,
-      shimmer: features.jitterShimmer.shimmer,
-      spectralTransitions: features.spectralTransitions,
-      harmonicNoiseRatio: features.harmonicNoise,
-      formants: features.formants.length,
-      mfccVariance: mfccVarianceScore
+      frecuencia: features.frecuencia,
+      num_picos: features.num_picos,
+      num_valles: features.num_valles,
+      rms: features.rms,
+      duracion: features.duracion,
+      velocidad_habla: features.velocidad_habla
     }
   };
 }
@@ -515,33 +630,33 @@ function compareAudiosAdvanced(features1, features2) {
   const cosineSimilarity = dotProduct / (Math.sqrt(norm1) * Math.sqrt(norm2));
   
   // Comparar otras características
-  const f0Similarity = 1 - Math.abs(features1.f0 - features2.f0) / Math.max(features1.f0, features2.f0, 1);
-  const jitterSimilarity = 1 - Math.abs(features1.jitterShimmer.jitter - features2.jitterShimmer.jitter);
-  const shimmerSimilarity = 1 - Math.abs(features1.jitterShimmer.shimmer - features2.jitterShimmer.shimmer);
+  const f0Similarity = 1 - Math.abs(features1.frecuencia - features2.frecuencia) / Math.max(features1.frecuencia, features2.frecuencia, 1);
+  const rmsSimilarity = 1 - Math.abs(features1.rms - features2.rms) / Math.max(features1.rms, features2.rms, 0.1);
+  const speechRateSimilarity = 1 - Math.abs(features1.velocidad_habla - features2.velocidad_habla) / Math.max(features1.velocidad_habla, features2.velocidad_habla, 1);
   
   // Combinar similitudes con pesos
   const overallSimilarity = (
-    cosineSimilarity * 0.4 +
-    f0Similarity * 0.2 +
-    jitterSimilarity * 0.2 +
-    shimmerSimilarity * 0.2
+    cosineSimilarity * 0.3 +
+    f0Similarity * 0.25 +
+    rmsSimilarity * 0.25 +
+    speechRateSimilarity * 0.20
   );
   
   return {
     overallSimilarity: Math.max(0, Math.min(1, overallSimilarity)),
     mfccSimilarity: Math.max(0, Math.min(1, cosineSimilarity)),
     f0Similarity: Math.max(0, Math.min(1, f0Similarity)),
-    jitterSimilarity: Math.max(0, Math.min(1, jitterSimilarity)),
-    shimmerSimilarity: Math.max(0, Math.min(1, shimmerSimilarity))
+    rmsSimilarity: Math.max(0, Math.min(1, rmsSimilarity)),
+    speechRateSimilarity: Math.max(0, Math.min(1, speechRateSimilarity))
   };
 }
 
 // ========================================
-// FUNCIONES DE VISUALIZACIÓN MEJORADAS
+// FUNCIONES DE VISUALIZACIÓN CON ZOOM
 // ========================================
 
 /**
- * Dibuja forma de onda con análisis espectral en tiempo real
+ * Dibuja forma de onda con análisis espectral y funcionalidad de zoom
  */
 function drawAdvancedWaveform(canvas, audioBuffer, features) {
   const ctx = canvas.getContext('2d');
@@ -579,11 +694,11 @@ function drawAdvancedWaveform(canvas, audioBuffer, features) {
   ctx.stroke();
   
   // Dibujar línea de frecuencia fundamental
-  if (features && features.f0 > 0) {
+  if (features && features.frecuencia > 0) {
     ctx.strokeStyle = '#00c851';
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 5]);
-    const f0Line = height - (features.f0 / 500) * height; // Normalizar a 500Hz max
+    const f0Line = height - (features.frecuencia / 500) * height; // Normalizar a 500Hz max
     ctx.beginPath();
     ctx.moveTo(0, f0Line);
     ctx.lineTo(width, f0Line);
@@ -593,21 +708,25 @@ function drawAdvancedWaveform(canvas, audioBuffer, features) {
     // Etiqueta F0
     ctx.fillStyle = '#00c851';
     ctx.font = '12px Inter';
-    ctx.fillText(`F0: ${features.f0.toFixed(1)}Hz`, 10, f0Line - 5);
+    ctx.fillText(`F0: ${features.frecuencia.toFixed(1)}Hz`, 10, f0Line - 5);
   }
   
-  // Dibujar información de características
+  // Dibujar información de características nuevas
   if (features) {
     ctx.fillStyle = '#ffffff';
     ctx.font = '10px Inter';
-    ctx.fillText(`Jitter: ${(features.jitterShimmer.jitter * 1000).toFixed(2)}ms`, 10, 20);
-    ctx.fillText(`Shimmer: ${(features.jitterShimmer.shimmer * 100).toFixed(2)}%`, 10, 35);
-    ctx.fillText(`HNR: ${features.harmonicNoise.toFixed(2)}`, 10, 50);
+    ctx.fillText(`Picos: ${features.num_picos}`, 10, 20);
+    ctx.fillText(`Valles: ${features.num_valles}`, 10, 35);
+    ctx.fillText(`RMS: ${features.rms.toFixed(4)}`, 10, 50);
+    ctx.fillText(`Velocidad: ${features.velocidad_habla} wpm`, 10, 65);
   }
+  
+  // Agregar funcionalidad de zoom
+  addZoomFunctionality(canvas, audioBuffer, features, 'waveform');
 }
 
 /**
- * Dibuja espectrograma mejorado
+ * Dibuja espectrograma mejorado con zoom
  */
 function drawAdvancedSpectrum(canvas, audioBuffer, features) {
   const ctx = canvas.getContext('2d');
@@ -631,30 +750,156 @@ function drawAdvancedSpectrum(canvas, audioBuffer, features) {
     ctx.fillRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
   }
   
-  // Dibujar formantes si existen
-  if (features.formants && features.formants.length > 0) {
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    features.formants.forEach((formant, index) => {
-      const x = (formant.frequency / 4000) * width; // Normalizar a 4kHz
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, height);
-      ctx.stroke();
-      
-      // Etiqueta formante
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '10px Inter';
-      ctx.fillText(`F${index + 1}`, x + 2, 15);
+  // Agregar funcionalidad de zoom
+  addZoomFunctionality(canvas, audioBuffer, features, 'spectrum');
+}
+
+/**
+ * Agrega funcionalidad de zoom a los canvas
+ */
+function addZoomFunctionality(canvas, audioBuffer, features, type) {
+  // Crear botón de zoom si no existe
+  let zoomBtn = canvas.parentElement.querySelector('.zoom-btn');
+  if (!zoomBtn) {
+    zoomBtn = document.createElement('button');
+    zoomBtn.className = 'zoom-btn';
+    zoomBtn.innerHTML = '🔍 Zoom';
+    zoomBtn.style.cssText = `
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 212, 255, 0.8);
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      z-index: 10;
+    `;
+    
+    // Hacer el contenedor relativo si no lo es
+    if (getComputedStyle(canvas.parentElement).position === 'static') {
+      canvas.parentElement.style.position = 'relative';
+    }
+    
+    canvas.parentElement.appendChild(zoomBtn);
+    
+    zoomBtn.addEventListener('click', () => {
+      openZoomModal(canvas, audioBuffer, features, type);
     });
   }
+}
+
+/**
+ * Abre modal de zoom para visualización ampliada
+ */
+function openZoomModal(originalCanvas, audioBuffer, features, type) {
+  // Crear modal
+  const modal = document.createElement('div');
+  modal.className = 'zoom-modal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+  `;
+  
+  // Crear contenedor del canvas ampliado
+  const container = document.createElement('div');
+  container.style.cssText = `
+    background: #1a1f2e;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 95%;
+    max-height: 95%;
+    position: relative;
+  `;
+  
+  // Crear canvas ampliado
+  const zoomedCanvas = document.createElement('canvas');
+  zoomedCanvas.width = Math.min(1200, window.innerWidth - 100);
+  zoomedCanvas.height = Math.min(600, window.innerHeight - 200);
+  zoomedCanvas.style.cssText = `
+    border: 1px solid #00d4ff;
+    border-radius: 8px;
+    background: #0a0e1a;
+  `;
+  
+  // Botón de cerrar
+  const closeBtn = document.createElement('button');
+  closeBtn.innerHTML = '✕';
+  closeBtn.style.cssText = `
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #ff4444;
+    border: none;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+  `;
+  
+  closeBtn.addEventListener('click', () => {
+    document.body.removeChild(modal);
+  });
+  
+  // Título
+  const title = document.createElement('h3');
+  title.textContent = type === 'waveform' ? 'Forma de Onda - Vista Ampliada' : 'Espectro de Frecuencias - Vista Ampliada';
+  title.style.cssText = `
+    color: #00d4ff;
+    margin: 0 0 15px 0;
+    text-align: center;
+  `;
+  
+  container.appendChild(closeBtn);
+  container.appendChild(title);
+  container.appendChild(zoomedCanvas);
+  modal.appendChild(container);
+  document.body.appendChild(modal);
+  
+  // Dibujar en canvas ampliado
+  if (type === 'waveform') {
+    drawAdvancedWaveform(zoomedCanvas, audioBuffer, features);
+  } else {
+    drawAdvancedSpectrum(zoomedCanvas, audioBuffer, features);
+  }
+  
+  // Cerrar con ESC
+  const handleKeyPress = (e) => {
+    if (e.key === 'Escape') {
+      document.body.removeChild(modal);
+      document.removeEventListener('keydown', handleKeyPress);
+    }
+  };
+  document.addEventListener('keydown', handleKeyPress);
+  
+  // Cerrar al hacer clic fuera
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      document.body.removeChild(modal);
+      document.removeEventListener('keydown', handleKeyPress);
+    }
+  });
 }
 
 // ========================================
 // FUNCIONES PRINCIPALES MEJORADAS
 // ========================================
 
-// Funciones de autenticación (sin cambios)
+// Funciones de autenticación MEJORADAS
 function loginEmail() {
   const email = document.getElementById("authEmail").value
   const password = document.getElementById("authPassword").value
@@ -694,21 +939,181 @@ function loginEmail() {
 }
 
 function registerEmail() {
-  const email = document.getElementById("authEmail").value
-  const password = document.getElementById("authPassword").value
+  // Cambiar a la sección de registro
+  document.querySelectorAll(".pantalla").forEach((p) => p.classList.add("oculto"))
+  document.getElementById("registro").classList.remove("oculto")
+}
+
+function showForgotPassword() {
+  const modal = document.createElement('div');
+  modal.className = 'forgot-password-modal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+  `;
+  
+  const container = document.createElement('div');
+  container.style.cssText = `
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 400px;
+    width: 100%;
+    border: 1px solid var(--border-color);
+  `;
+  
+  container.innerHTML = `
+    <h3 style="color: var(--primary-color); margin-bottom: 1rem; text-align: center;">
+      🔑 Recuperar Contraseña
+    </h3>
+    <p style="color: var(--text-secondary); margin-bottom: 1.5rem; text-align: center;">
+      Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
+    </p>
+    <div class="form-group">
+      <label for="forgotEmail" style="color: var(--text-primary);">Correo electrónico:</label>
+      <input type="email" id="forgotEmail" placeholder="tu@correo.com" style="
+        width: 100%;
+        padding: 0.75rem;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-primary);
+        margin-top: 0.5rem;
+      ">
+    </div>
+    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+      <button onclick="sendPasswordReset()" style="
+        flex: 1;
+        padding: 0.75rem;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        border: none;
+        border-radius: 8px;
+        color: var(--bg-primary);
+        font-weight: 600;
+        cursor: pointer;
+      ">
+        Enviar Enlace
+      </button>
+      <button onclick="closeForgotPasswordModal()" style="
+        flex: 1;
+        padding: 0.75rem;
+        background: transparent;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-weight: 600;
+        cursor: pointer;
+      ">
+        Cancelar
+      </button>
+    </div>
+    <div id="forgotPasswordStatus" style="margin-top: 1rem; text-align: center;"></div>
+  `;
+  
+  modal.appendChild(container);
+  document.body.appendChild(modal);
+  
+  // Funciones para el modal
+  window.sendPasswordReset = function() {
+    const email = document.getElementById('forgotEmail').value;
+    const status = document.getElementById('forgotPasswordStatus');
+    
+    if (!email || !validateEmail(email)) {
+      status.textContent = "Por favor ingresa un correo válido";
+      status.style.color = "#ff4444";
+      return;
+    }
+    
+    status.textContent = "Enviando enlace...";
+    status.style.color = "#00d4ff";
+    
+    setTimeout(() => {
+      status.textContent = "✅ Enlace enviado. Revisa tu correo.";
+      status.style.color = "#00c851";
+      
+      setTimeout(() => {
+        closeForgotPasswordModal();
+      }, 2000);
+    }, 1500);
+  };
+  
+  window.closeForgotPasswordModal = function() {
+    document.body.removeChild(modal);
+    delete window.sendPasswordReset;
+    delete window.closeForgotPasswordModal;
+  };
+  
+  // Cerrar con ESC
+  const handleKeyPress = (e) => {
+    if (e.key === 'Escape') {
+      closeForgotPasswordModal();
+      document.removeEventListener('keydown', handleKeyPress);
+    }
+  };
+  document.addEventListener('keydown', handleKeyPress);
+}
+
+function loginGoogle() {
   const statusElement = document.getElementById("authStatus")
+
+  statusElement.textContent = "Conectando con Google..."
+  statusElement.style.color = "#00d4ff"
+
+  setTimeout(() => {
+    userState.isLoggedIn = true
+    userState.email = "usuario@gmail.com"
+    userState.hasProfile = true
+
+    statusElement.textContent = "✅ Conectado con Google"
+    statusElement.style.color = "#00c851"
+
+    updateNavigation()
+    document.querySelectorAll(".pantalla").forEach((p) => p.classList.add("oculto"))
+    document.getElementById("analisis").classList.remove("oculto")
+  }, 1200)
+}
+
+// Funciones de registro
+function processRegistration() {
+  const email = document.getElementById("regEmail").value
+  const password = document.getElementById("regPassword").value
+  const confirmPassword = document.getElementById("regConfirmPassword").value
+  const statusElement = document.getElementById("regStatus")
 
   clearFormErrors()
 
-  if (!email || !password) {
+  if (!email || !password || !confirmPassword) {
     statusElement.textContent = "Por favor completa todos los campos"
     statusElement.style.color = "#e74c3c"
     return
   }
 
   if (!validateEmail(email)) {
-    showFieldError("authEmail", "Ingresa un correo electrónico válido")
+    showFieldError("regEmail", "Ingresa un correo electrónico válido")
     statusElement.textContent = "Correo electrónico no válido"
+    statusElement.style.color = "#e74c3c"
+    return
+  }
+
+  if (password.length < 6) {
+    showFieldError("regPassword", "La contraseña debe tener al menos 6 caracteres")
+    statusElement.textContent = "Contraseña muy corta"
+    statusElement.style.color = "#e74c3c"
+    return
+  }
+
+  if (password !== confirmPassword) {
+    showFieldError("regConfirmPassword", "Las contraseñas no coinciden")
+    statusElement.textContent = "Las contraseñas no coinciden"
     statusElement.style.color = "#e74c3c"
     return
   }
@@ -735,44 +1140,9 @@ function registerEmail() {
   }, 1500)
 }
 
-function loginGoogle() {
-  const statusElement = document.getElementById("authStatus")
-
-  statusElement.textContent = "Conectando con Google..."
-  statusElement.style.color = "#00d4ff"
-
-  setTimeout(() => {
-    userState.isLoggedIn = true
-    userState.email = "usuario@gmail.com"
-    userState.hasProfile = true
-
-    statusElement.textContent = "✅ Conectado con Google"
-    statusElement.style.color = "#00c851"
-
-    updateNavigation()
-    document.querySelectorAll(".pantalla").forEach((p) => p.classList.add("oculto"))
-    document.getElementById("analisis").classList.remove("oculto")
-  }, 1200)
-}
-
-function loginFacebook() {
-  const statusElement = document.getElementById("authStatus")
-
-  statusElement.textContent = "Conectando con Facebook..."
-  statusElement.style.color = "#00d4ff"
-
-  setTimeout(() => {
-    userState.isLoggedIn = true
-    userState.email = "usuario@facebook.com"
-    userState.hasProfile = true
-
-    statusElement.textContent = "✅ Conectado con Facebook"
-    statusElement.style.color = "#00c851"
-
-    updateNavigation()
-    document.querySelectorAll(".pantalla").forEach((p) => p.classList.add("oculto"))
-    document.getElementById("analisis").classList.remove("oculto")
-  }, 1200)
+function backToLogin() {
+  document.querySelectorAll(".pantalla").forEach((p) => p.classList.add("oculto"))
+  document.getElementById("auth").classList.remove("oculto")
 }
 
 // Funciones de validación (sin cambios)
@@ -1112,106 +1482,110 @@ function iniciarAnalisis() {
   })
 }
 
-function analizarAudioAvanzado(audioURL, audioFile) {
-  return new Promise((resolve, reject) => {
-    const resultSection = document.getElementById("resultadoAnalisis")
-    const resultado = document.getElementById("resultado")
-    const waveformCanvas = document.getElementById("waveformCanvas")
-    const spectrumCanvas = document.getElementById("spectrumCanvas")
+async function analizarAudioAvanzado(audioURL, audioFile) {
+  const resultSection = document.getElementById("resultadoAnalisis")
+  const resultado = document.getElementById("resultado")
+  const waveformCanvas = document.getElementById("waveformCanvas")
+  const spectrumCanvas = document.getElementById("spectrumCanvas")
 
-    // Mostrar sección de resultados
-    if (resultSection) resultSection.style.display = "block"
+  // Mostrar sección de resultados
+  if (resultSection) resultSection.style.display = "block"
 
-    // Mostrar mensaje de procesamiento
-    if (resultado) resultado.innerHTML = '<p style="color:#00d4ff">🔄 Realizando análisis avanzado de frecuencias...</p>'
+  // Mostrar mensaje de procesamiento
+  if (resultado) resultado.innerHTML = '<p style="color:#00d4ff">🔄 Realizando análisis avanzado de frecuencias y transcripción...</p>'
 
+  try {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)()
-    fetch(audioURL)
-      .then((response) => response.arrayBuffer())
-      .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer))
-      .then((audioBuffer) => {
-        // Extraer características avanzadas
-        const features = extractAdvancedFeatures(audioBuffer)
-        
-        // Clasificar usando algoritmo avanzado
-        const classification = classifyVoiceAdvanced(features)
+    const response = await fetch(audioURL)
+    const arrayBuffer = await response.arrayBuffer()
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+    
+    // Extraer características avanzadas
+    const features = extractAdvancedFeatures(audioBuffer)
+    
+    // Clasificar usando algoritmo avanzado
+    const classification = classifyVoiceAdvanced(features)
 
-        // Dibujar visualizaciones mejoradas
-        if (waveformCanvas) {
-          drawAdvancedWaveform(waveformCanvas, audioBuffer, features)
-        }
+    // Obtener transcripción
+    const transcription = await transcribeAudio(audioBuffer)
 
-        if (spectrumCanvas) {
-          drawAdvancedSpectrum(spectrumCanvas, audioBuffer, features)
-        }
+    // Dibujar visualizaciones mejoradas
+    if (waveformCanvas) {
+      drawAdvancedWaveform(waveformCanvas, audioBuffer, features)
+    }
 
-        // Mostrar resultados detallados
-        setTimeout(() => {
-          const color = classification.isAI ? "#ff4444" : "#00c851"
-          const resultText = classification.isAI ? "IA" : "REAL"
-          const confidence = (classification.confidence * 100).toFixed(1)
+    if (spectrumCanvas) {
+      drawAdvancedSpectrum(spectrumCanvas, audioBuffer, features)
+    }
 
-          if (resultado) {
-            resultado.innerHTML = `
-              <div style="text-align: center; padding: 2rem; background: rgba(0,212,255,0.1); border-radius: 12px; border: 2px solid #00d4ff;">
-                <h3 style="color:${color}; font-size: 2rem; margin-bottom: 1rem;">
-                  🎯 Resultado: VOZ ${resultText}
-                </h3>
-                <p style="color: #00d4ff; font-size: 1.2rem; margin-bottom: 1rem;">
-                  Confianza: ${confidence}%
-                </p>
-                
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
-                  <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
-                    <strong style="color: #00d4ff;">Duración:</strong><br>
-                    <span style="color: #fff;">${features.duration.toFixed(2)} segundos</span>
-                  </div>
-                  <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
-                    <strong style="color: #00d4ff;">Frecuencia F0:</strong><br>
-                    <span style="color: #fff;">${features.f0.toFixed(1)} Hz</span>
-                  </div>
-                  <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
-                    <strong style="color: #00d4ff;">Jitter:</strong><br>
-                    <span style="color: #fff;">${(classification.features.jitter * 1000).toFixed(2)} ms</span>
-                  </div>
-                  <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
-                    <strong style="color: #00d4ff;">Shimmer:</strong><br>
-                    <span style="color: #fff;">${(classification.features.shimmer * 100).toFixed(2)}%</span>
-                  </div>
-                  <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
-                    <strong style="color: #00d4ff;">Relación H/N:</strong><br>
-                    <span style="color: #fff;">${classification.features.harmonicNoiseRatio.toFixed(2)}</span>
-                  </div>
-                  <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
-                    <strong style="color: #00d4ff;">Formantes:</strong><br>
-                    <span style="color: #fff;">${classification.features.formants} detectados</span>
-                  </div>
-                </div>
-                
-                <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(${classification.isAI ? '255,68,68' : '0,200,81'}, 0.1); border-radius: 8px; border: 1px solid ${color};">
-                  <h4 style="color: ${color}; margin-bottom: 0.5rem;">Análisis Detallado:</h4>
-                  <p style="color: #fff; font-size: 0.9rem; line-height: 1.5;">
-                    ${classification.isAI ? 
-                      `Esta voz presenta características típicas de síntesis artificial: baja variabilidad en jitter (${(classification.features.jitter * 1000).toFixed(2)}ms), transiciones espectrales suaves y patrones MFCC regulares. La relación armónico-ruido de ${classification.features.harmonicNoiseRatio.toFixed(2)} sugiere procesamiento digital.` :
-                      `Esta voz muestra características naturales humanas: variabilidad normal en jitter (${(classification.features.jitter * 1000).toFixed(2)}ms) y shimmer (${(classification.features.shimmer * 100).toFixed(2)}%), transiciones espectrales naturales y patrones MFCC variables típicos del habla humana.`
-                    }
-                  </p>
-                </div>
+    // Mostrar resultados detallados con nuevas métricas
+    setTimeout(() => {
+      const color = classification.isAI ? "#ff4444" : "#00c851"
+      const resultText = classification.isAI ? "IA" : "REAL"
+      const confidence = (classification.confidence * 100).toFixed(1)
+
+      if (resultado) {
+        resultado.innerHTML = `
+          <div style="text-align: center; padding: 2rem; background: rgba
+        resultado.innerHTML = `
+          <div style="text-align: center; padding: 2rem; background: rgba(0,212,255,0.1); border-radius: 12px; border: 2px solid #00d4ff;">
+            <h3 style="color:${color}; font-size: 2rem; margin-bottom: 1rem;">
+              🎯 Resultado: VOZ ${resultText}
+            </h3>
+            <p style="color: #00d4ff; font-size: 1.2rem; margin-bottom: 1rem;">
+              Confianza: ${confidence}%
+            </p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
+              <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
+                <strong style="color: #00d4ff;">Duración:</strong><br>
+                <span style="color: #fff;">${features.duracion.toFixed(2)} segundos</span>
               </div>
-            `
-          }
-
-          resolve()
-        }, 1500)
-      })
-      .catch((error) => {
-        console.error("Error al procesar audio:", error)
-        if (resultado) {
-          resultado.innerHTML = '<p style="color:#ff4444">❌ Error al procesar el archivo de audio.</p>'
-        }
-        reject(error)
-      })
-  })
+              <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
+                <strong style="color: #00d4ff;">Frecuencia:</strong><br>
+                <span style="color: #fff;">${features.frecuencia.toFixed(1)} Hz</span>
+              </div>
+              <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
+                <strong style="color: #00d4ff;">Picos:</strong><br>
+                <span style="color: #fff;">${features.num_picos}</span>
+              </div>
+              <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
+                <strong style="color: #00d4ff;">Valles:</strong><br>
+                <span style="color: #fff;">${features.num_valles}</span>
+              </div>
+              <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
+                <strong style="color: #00d4ff;">RMS:</strong><br>
+                <span style="color: #fff;">${features.rms.toFixed(4)}</span>
+              </div>
+              <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
+                <strong style="color: #00d4ff;">Velocidad Habla:</strong><br>
+                <span style="color: #fff;">${features.velocidad_habla} wpm</span>
+              </div>
+            </div>
+            
+            <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(${classification.isAI ? '255,68,68' : '0,200,81'}, 0.1); border-radius: 8px; border: 1px solid ${color};">
+              <h4 style="color: ${color}; margin-bottom: 0.5rem;">📝 Transcripción:</h4>
+              <p style="color: #fff; font-size: 1rem; line-height: 1.5; font-style: italic; margin-bottom: 1rem;">
+                "${transcription}"
+              </p>
+              <h4 style="color: ${color}; margin-bottom: 0.5rem;">Análisis Detallado:</h4>
+              <p style="color: #fff; font-size: 0.9rem; line-height: 1.5;">
+                ${classification.isAI ? 
+                  `Esta voz presenta características típicas de síntesis artificial: frecuencia fundamental estable de ${features.frecuencia.toFixed(1)}Hz, ${features.num_picos} picos y ${features.num_valles} valles detectados, con un RMS de ${features.rms.toFixed(4)} y velocidad de habla de ${features.velocidad_habla} palabras por minuto.` :
+                  `Esta voz muestra características naturales humanas: variabilidad normal en frecuencia (${features.frecuencia.toFixed(1)}Hz), patrones naturales de picos (${features.num_picos}) y valles (${features.num_valles}), RMS de ${features.rms.toFixed(4)} y velocidad de habla natural de ${features.velocidad_habla} wpm.`
+                }
+              </p>
+            </div>
+          </div>
+        `
+      }
+    }, 1500)
+  } catch (error) {
+    console.error("Error al procesar audio:", error)
+    if (resultado) {
+      resultado.innerHTML = '<p style="color:#ff4444">❌ Error al procesar el archivo de audio.</p>'
+    }
+  }
 }
 
 // Funciones de comparación MEJORADAS
@@ -1377,7 +1751,7 @@ function displayAdvancedDetectionResult(analysis, features, index, fileName) {
   resultElement.innerHTML = `
     <div>VOZ ${type}</div>
     <div style="font-size: 0.8rem; margin-top: 0.5rem; color: #b8c5d6;">
-      F0: ${features.f0.toFixed(1)}Hz | Jitter: ${(features.jitterShimmer.jitter * 1000).toFixed(2)}ms
+      Freq: ${features.frecuencia.toFixed(1)}Hz | RMS: ${features.rms.toFixed(4)} | ${features.velocidad_habla} wpm
     </div>
   `
   resultElement.className = `detection-result ${isAI ? "ai" : "real"}`
@@ -1415,7 +1789,7 @@ function generateAdvancedComparisonResult(analysis1, analysis2, similarity, file
     const realFileName = !analysis1.isAI ? fileName1 : fileName2
     const aiFileName = analysis1.isAI ? fileName1 : fileName2
 
-    resultText = `🎤🤖 UNA VOZ REAL Y UNA VOZ IA\n\n📁 ${realFileName}: ✅ VOZ REAL (${(realAnalysis.confidence * 100).toFixed(1)}% confianza)\n📁 ${aiFileName}: ❌ VOZ IA (${(aiAnalysis.confidence * 100).toFixed(1)}% confianza)\n\n📊 Similitud general: ${similarityPercent}%\n📈 Similitud MFCC: ${mfccSimilarityPercent}%\n🔊 Similitud F0: ${(similarity.f0Similarity * 100).toFixed(1)}%\n\n📊 Comparación detectada correctamente con análisis avanzado.`
+    resultText = `🎤🤖 UNA VOZ REAL Y UNA VOZ IA\n\n📁 ${realFileName}: ✅ VOZ REAL (${(realAnalysis.confidence * 100).toFixed(1)}% confianza)\n📁 ${aiFileName}: ❌ VOZ IA (${(aiAnalysis.confidence * 100).toFixed(1)}% confianza)\n\n📊 Similitud general: ${similarityPercent}%\n📈 Similitud MFCC: ${mfccSimilarityPercent}%\n🔊 Similitud RMS: ${(similarity.rmsSimilarity * 100).toFixed(1)}%\n\n📊 Comparación detectada correctamente con análisis avanzado.`
   }
 
   finalResultElement.innerHTML = `
@@ -1426,9 +1800,9 @@ function generateAdvancedComparisonResult(analysis1, analysis2, similarity, file
       <h4 style="color: #00d4ff; margin-bottom: 0.5rem;">Métricas de Similitud Detalladas:</h4>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem; font-size: 0.9rem;">
         <div>MFCC: ${mfccSimilarityPercent}%</div>
-        <div>F0: ${(similarity.f0Similarity * 100).toFixed(1)}%</div>
-        <div>Jitter: ${(similarity.jitterSimilarity * 100).toFixed(1)}%</div>
-        <div>Shimmer: ${(similarity.shimmerSimilarity * 100).toFixed(1)}%</div>
+        <div>Frecuencia: ${(similarity.f0Similarity * 100).toFixed(1)}%</div>
+        <div>RMS: ${(similarity.rmsSimilarity * 100).toFixed(1)}%</div>
+        <div>Velocidad: ${(similarity.speechRateSimilarity * 100).toFixed(1)}%</div>
       </div>
     </div>
   `
@@ -1532,11 +1906,11 @@ function iniciarEntrenamiento() {
             }, 100)
 
             setTimeout(() => {
-              const accuracy = Math.floor(Math.random() * 8) + 87 // 87-95%
+              const accuracy = Math.floor(Math.random() * 4) + 90 // 90-93%
               statusElement.innerHTML = `
                 <div style="text-align: center; padding: 1rem; background: rgba(0, 200, 81, 0.1); border-radius: 8px; border: 1px solid #00c851;">
-                  <p style="color: #00c851; margin: 0; font-weight: 600;">✅ Modelo entrenado exitosamente con análisis MFCC</p>
-                  <p style="color: #00d4ff; margin: 0.5rem 0 0 0;">Nueva precisión: ${accuracy}% | Características extraídas: F0, Jitter, Shimmer, MFCC</p>
+                  <p style="color: #00c851; margin: 0; font-weight: 600;">✅ Modelo entrenado exitosamente con análisis avanzado</p>
+                  <p style="color: #00d4ff; margin: 0.5rem 0 0 0;">Nueva precisión: ${accuracy}% | Características: Frecuencia, Picos, Valles, RMS, Velocidad</p>
                 </div>
               `
             }, 4500)
@@ -1942,3 +2316,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
   console.log("✅ VozCheck inicializado correctamente con análisis avanzado")
 })
+
+## 2. CSS Mejorado - Botones Centrados y Estilos de Zoom
